@@ -70,8 +70,9 @@
             margin-top: 15px;
         }
 
-        /* Drop Zone */
+        /* Drop Zone - hidden by default on hosted version */
         .drop-zone {
+            display: none;
             background: var(--velvet-black);
             border: 0.5px solid var(--graphite);
             padding: 80px 40px;
@@ -79,6 +80,10 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             margin-bottom: 40px;
+        }
+
+        .drop-zone.show-drop-zone {
+            display: block;
         }
 
         .drop-zone:hover,
@@ -105,6 +110,50 @@
 
         .drop-zone.loaded .drop-zone-text {
             font-size: 14px;
+        }
+
+        /* Run Selector Dropdown */
+        .run-selector {
+            display: none;
+            margin-bottom: 30px;
+        }
+
+        .run-selector.visible {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .run-selector label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--silver);
+        }
+
+        .run-selector select {
+            background: var(--velvet-black);
+            border: 0.5px solid var(--graphite);
+            color: var(--paper-white);
+            padding: 12px 40px 12px 16px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b8b8b8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            min-width: 280px;
+        }
+
+        .run-selector select:hover {
+            border-color: var(--editorial-blue);
+        }
+
+        .run-selector select:focus {
+            outline: none;
+            border-color: var(--champagne-gold);
         }
 
         /* Metrics Bar */
@@ -346,6 +395,11 @@
             <input type="file" id="fileInput" accept=".json" style="display: none;">
         </div>
 
+        <div class="run-selector" id="runSelector">
+            <label for="runSelect">Benchmark Run</label>
+            <select id="runSelect"></select>
+        </div>
+
         <div class="metrics-bar" id="metricsBar">
             <div class="metric">
                 <span class="metric-value" id="totalBenchmarks">-</span>
@@ -429,6 +483,7 @@
         let comparisonChart = null;
         let scalingChart = null;
         let activeFilter = 'all';
+        let availableRuns = [];
 
         // DOM Elements
         const dropZone = document.getElementById('dropZone');
@@ -438,8 +493,10 @@
         const chartsGrid = document.getElementById('chartsGrid');
         const resultsSection = document.getElementById('resultsSection');
         const historySection = document.getElementById('historySection');
+        const runSelector = document.getElementById('runSelector');
+        const runSelect = document.getElementById('runSelect');
 
-        // File handling
+        // File handling (for local dev - drop zone hidden by default)
         dropZone.addEventListener('click', () => fileInput.click());
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -475,9 +532,57 @@
             saveToHistory(currentData, filename);
             renderDashboard();
 
-            dropZone.classList.add('loaded');
-            dropZone.querySelector('.drop-zone-text').textContent = `Loaded: ${filename}`;
-            dropZone.querySelector('.drop-zone-hint').textContent = 'Drop another file to replace';
+            if (dropZone.classList.contains('show-drop-zone')) {
+                dropZone.classList.add('loaded');
+                dropZone.querySelector('.drop-zone-text').textContent = `Loaded: ${filename}`;
+                dropZone.querySelector('.drop-zone-hint').textContent = 'Drop another file to replace';
+            }
+        }
+
+        // Run selector handling
+        runSelect.addEventListener('change', (e) => {
+            const selectedRun = e.target.value;
+            if (selectedRun) {
+                loadRunFromUrl(selectedRun);
+            }
+        });
+
+        async function loadRunFromUrl(url) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                currentData = parseJMHData(data);
+                renderDashboard();
+            } catch (err) {
+                console.error('Failed to load run:', url, err);
+            }
+        }
+
+        function populateRunSelector(runs) {
+            availableRuns = runs;
+            runSelect.innerHTML = runs.map((run, i) => {
+                const label = run.label || run.file;
+                const selected = i === 0 ? 'selected' : '';
+                return `<option value="${run.file}" ${selected}>${label}</option>`;
+            }).join('');
+            runSelector.classList.add('visible');
+        }
+
+        // Auto-initialize from runs.json if available (for hosted version)
+        async function initFromHosted() {
+            try {
+                const response = await fetch('runs.json');
+                if (response.ok) {
+                    const runs = await response.json();
+                    if (runs.length > 0) {
+                        populateRunSelector(runs);
+                        await loadRunFromUrl(runs[0].file);
+                    }
+                }
+            } catch {
+                // No runs.json - show drop zone for local dev
+                dropZone.classList.add('show-drop-zone');
+            }
         }
 
         function parseJMHData(jmhData) {
@@ -754,9 +859,8 @@
             });
         });
 
-        // Auto-load results
-        fetch("benchmark-results.json").then(r => r.json()).then(data => { processData(data, "benchmark-results.json"); }).catch(e => console.log("No results yet"));
         // Initial render
+        initFromHosted();
         renderHistory();
     </script>
 </body>
