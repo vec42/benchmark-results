@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EndBoss Benchmarks</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+        :root {
+            --ink-black: #0a0a0a;
+            --studio-black: #0f0f0f;
+            --velvet-black: #1a1a1a;
+            --smoke-black: #242424;
+            --graphite: #3a3a3a;
+            --cashmere: #5a5a5a;
+            --silver: #8a8a8a;
+            --pearl: #b8b8b8;
+            --paper-white: #fafafa;
+            --electric-coral: #b92929;
+            --champagne-gold: #a5955f;
+            --editorial-blue: #4a69bd;
+            --jade-green: #26de81;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--studio-black);
+            color: var(--paper-white);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        .masthead {
+            border-bottom: 0.5px solid var(--graphite);
+            padding-bottom: 40px;
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--champagne-gold);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 0.95;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--silver);
+            font-weight: 300;
+            letter-spacing: 1px;
+            margin-top: 15px;
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            background: var(--velvet-black);
+            border: 0.5px solid var(--graphite);
+            padding: 80px 40px;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            margin-bottom: 40px;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--editorial-blue);
+            background: var(--smoke-black);
+        }
+
+        .drop-zone-text {
+            font-size: 16px;
+            color: var(--silver);
+            font-weight: 300;
+        }
+
+        .drop-zone-hint {
+            font-size: 12px;
+            color: var(--cashmere);
+            margin-top: 10px;
+        }
+
+        .drop-zone.loaded {
+            padding: 30px 40px;
+        }
+
+        .drop-zone.loaded .drop-zone-text {
+            font-size: 14px;
+        }
+
+        /* Metrics Bar */
+        .metrics-bar {
+            display: none;
+            gap: 40px;
+            padding: 30px 40px;
+            background: var(--ink-black);
+            border: 0.5px solid var(--graphite);
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .metrics-bar.visible { display: flex; }
+
+        .metric {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--paper-white);
+        }
+
+        .metric-value.positive { color: var(--jade-green); }
+        .metric-value.negative { color: var(--electric-coral); }
+
+        .metric-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--silver);
+            margin-top: 5px;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .charts-grid.visible { display: grid; }
+
+        @media (max-width: 1000px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+
+        .chart-card {
+            background: var(--velvet-black);
+            border: 0.5px solid var(--graphite);
+            padding: 30px;
+        }
+
+        .chart-title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--champagne-gold);
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Results Table */
+        .results-section {
+            display: none;
+            margin-bottom: 40px;
+        }
+
+        .results-section.visible { display: block; }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--silver);
+            margin-bottom: 20px;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--velvet-black);
+            border: 0.5px solid var(--graphite);
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 0.5px solid var(--graphite);
+        }
+
+        .results-table th {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--silver);
+            background: var(--ink-black);
+        }
+
+        .results-table td {
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .results-table tr:hover {
+            background: var(--smoke-black);
+        }
+
+        .score-cell {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .speedup-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 2px;
+        }
+
+        .speedup-badge.positive {
+            background: rgba(38, 222, 129, 0.15);
+            color: var(--jade-green);
+        }
+
+        .speedup-badge.negative {
+            background: rgba(185, 41, 41, 0.15);
+            color: var(--electric-coral);
+        }
+
+        /* History Section */
+        .history-section {
+            display: none;
+            margin-top: 60px;
+            padding-top: 40px;
+            border-top: 0.5px solid var(--graphite);
+        }
+
+        .history-section.visible { display: block; }
+
+        .history-list {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .history-item {
+            padding: 12px 20px;
+            background: var(--velvet-black);
+            border: 0.5px solid var(--graphite);
+            font-size: 12px;
+            color: var(--pearl);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-item:hover {
+            border-color: var(--editorial-blue);
+            background: var(--smoke-black);
+        }
+
+        .history-item.active {
+            border-color: var(--champagne-gold);
+        }
+
+        .clear-history {
+            padding: 12px 20px;
+            background: transparent;
+            border: 0.5px solid var(--graphite);
+            color: var(--silver);
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .clear-history:hover {
+            border-color: var(--electric-coral);
+            color: var(--electric-coral);
+        }
+
+        /* Filter controls */
+        .filter-bar {
+            display: none;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar.visible { display: flex; }
+
+        .filter-btn {
+            padding: 10px 20px;
+            background: var(--velvet-black);
+            border: 0.5px solid var(--graphite);
+            color: var(--pearl);
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--editorial-blue);
+        }
+
+        .filter-btn.active {
+            background: var(--editorial-blue);
+            border-color: var(--editorial-blue);
+            color: var(--paper-white);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="masthead">
+            <div class="logo">Benchmark Dashboard</div>
+            <h1>Performance<br>Metrics</h1>
+            <p class="subtitle">SIMD vs Scalar comparison across vector dimensions</p>
+        </header>
+
+        <div class="drop-zone" id="dropZone">
+            <p class="drop-zone-text">Drop results.json here</p>
+            <p class="drop-zone-hint">Or click to select file</p>
+            <input type="file" id="fileInput" accept=".json" style="display: none;">
+        </div>
+
+        <div class="metrics-bar" id="metricsBar">
+            <div class="metric">
+                <span class="metric-value" id="totalBenchmarks">-</span>
+                <span class="metric-label">Benchmarks</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value positive" id="simdWins">-</span>
+                <span class="metric-label">SIMD Wins</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value" id="avgSpeedup">-</span>
+                <span class="metric-label">Avg Speedup</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value" id="maxSpeedup">-</span>
+                <span class="metric-label">Max Speedup</span>
+            </div>
+        </div>
+
+        <div class="filter-bar" id="filterBar">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="VectorMath">Vector Math</button>
+            <button class="filter-btn" data-filter="BatchMath">Batch Math</button>
+            <button class="filter-btn" data-filter="QuantPrimitives">Quantization</button>
+        </div>
+
+        <div class="charts-grid" id="chartsGrid">
+            <div class="chart-card">
+                <div class="chart-title">SIMD vs Scalar Performance</div>
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">Dimension Scaling</div>
+                <div class="chart-container">
+                    <canvas id="scalingChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <h2 class="section-title">Detailed Results</h2>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Benchmark</th>
+                        <th>Dimension</th>
+                        <th>SIMD (ops/us)</th>
+                        <th>Scalar (ops/us)</th>
+                        <th>Speedup</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+        </div>
+
+        <div class="history-section" id="historySection">
+            <h2 class="section-title">Run History</h2>
+            <div class="history-list" id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        // EndBoss color palette
+        const colors = {
+            simd: '#4a69bd',
+            scalar: '#b92929',
+            grid: '#3a3a3a',
+            text: '#b8b8b8',
+            jade: '#26de81',
+            gold: '#a5955f'
+        };
+
+        // Chart.js global config
+        Chart.defaults.color = colors.text;
+        Chart.defaults.borderColor = colors.grid;
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        let currentData = null;
+        let comparisonChart = null;
+        let scalingChart = null;
+        let activeFilter = 'all';
+
+        // DOM Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const metricsBar = document.getElementById('metricsBar');
+        const filterBar = document.getElementById('filterBar');
+        const chartsGrid = document.getElementById('chartsGrid');
+        const resultsSection = document.getElementById('resultsSection');
+        const historySection = document.getElementById('historySection');
+
+        // File handling
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) loadFile(file);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) loadFile(e.target.files[0]);
+        });
+
+        function loadFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    processData(data, file.name);
+                } catch (err) {
+                    alert('Invalid JSON file');
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function processData(jmhData, filename) {
+            currentData = parseJMHData(jmhData);
+            saveToHistory(currentData, filename);
+            renderDashboard();
+
+            dropZone.classList.add('loaded');
+            dropZone.querySelector('.drop-zone-text').textContent = `Loaded: ${filename}`;
+            dropZone.querySelector('.drop-zone-hint').textContent = 'Drop another file to replace';
+        }
+
+        function parseJMHData(jmhData) {
+            const results = [];
+
+            for (const bench of jmhData) {
+                const fullName = bench.benchmark;
+                const parts = fullName.split('.');
+                const methodName = parts[parts.length - 1];
+                const className = parts[parts.length - 2] || '';
+
+                const params = bench.params || {};
+                const backend = params.backend || 'UNKNOWN';
+                const dimension = parseInt(params.dimension) || 0;
+                const batchSize = parseInt(params.batchSize) || 0;
+
+                const score = bench.primaryMetric?.score || 0;
+                const error = bench.primaryMetric?.scoreError || 0;
+
+                results.push({
+                    name: methodName,
+                    suite: className.replace('Benchmark', ''),
+                    backend,
+                    dimension,
+                    batchSize,
+                    score,
+                    error,
+                    unit: bench.primaryMetric?.scoreUnit || 'ops/us'
+                });
+            }
+
+            return results;
+        }
+
+        function renderDashboard() {
+            const filtered = filterData(currentData, activeFilter);
+            renderMetrics(filtered);
+            renderCharts(filtered);
+            renderTable(filtered);
+            renderHistory();
+
+            metricsBar.classList.add('visible');
+            filterBar.classList.add('visible');
+            chartsGrid.classList.add('visible');
+            resultsSection.classList.add('visible');
+            historySection.classList.add('visible');
+        }
+
+        function filterData(data, filter) {
+            if (filter === 'all') return data;
+            return data.filter(d => d.suite.includes(filter));
+        }
+
+        function renderMetrics(data) {
+            const paired = pairByBackend(data);
+            const speedups = paired.map(p => p.simd.score / p.scalar.score).filter(s => isFinite(s) && s > 0);
+            const simdWins = speedups.filter(s => s > 1).length;
+            const avgSpeedup = speedups.length > 0 ? speedups.reduce((a, b) => a + b, 0) / speedups.length : 0;
+            const maxSpeedup = speedups.length > 0 ? Math.max(...speedups) : 0;
+
+            document.getElementById('totalBenchmarks').textContent = paired.length;
+            document.getElementById('simdWins').textContent = simdWins;
+            document.getElementById('avgSpeedup').textContent = avgSpeedup.toFixed(2) + 'x';
+            document.getElementById('maxSpeedup').textContent = maxSpeedup.toFixed(2) + 'x';
+        }
+
+        function pairByBackend(data) {
+            const grouped = {};
+
+            for (const d of data) {
+                const key = `${d.name}-${d.dimension}-${d.batchSize}`;
+                if (!grouped[key]) grouped[key] = {};
+                grouped[key][d.backend] = d;
+            }
+
+            return Object.values(grouped)
+                .filter(g => g.SIMD && g.SCALAR)
+                .map(g => ({ simd: g.SIMD, scalar: g.SCALAR }));
+        }
+
+        function renderCharts(data) {
+            const paired = pairByBackend(data);
+
+            // Comparison Chart
+            const compLabels = paired.slice(0, 15).map(p => `${p.simd.name} (${p.simd.dimension})`);
+            const simdScores = paired.slice(0, 15).map(p => p.simd.score);
+            const scalarScores = paired.slice(0, 15).map(p => p.scalar.score);
+
+            if (comparisonChart) comparisonChart.destroy();
+            comparisonChart = new Chart(document.getElementById('comparisonChart'), {
+                type: 'bar',
+                data: {
+                    labels: compLabels,
+                    datasets: [
+                        {
+                            label: 'SIMD',
+                            data: simdScores,
+                            backgroundColor: colors.simd,
+                            borderRadius: 2
+                        },
+                        {
+                            label: 'Scalar',
+                            data: scalarScores,
+                            backgroundColor: colors.scalar,
+                            borderRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { padding: 20, usePointStyle: true, pointStyle: 'rect' }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            grid: { color: colors.grid },
+                            title: { display: true, text: 'ops/us' }
+                        }
+                    }
+                }
+            });
+
+            // Scaling Chart - group by dimension
+            const byDimension = {};
+            for (const p of paired) {
+                const dim = p.simd.dimension;
+                if (!byDimension[dim]) byDimension[dim] = { simd: [], scalar: [] };
+                byDimension[dim].simd.push(p.simd.score);
+                byDimension[dim].scalar.push(p.scalar.score);
+            }
+
+            const dimensions = Object.keys(byDimension).map(Number).sort((a, b) => a - b);
+            const avgSimd = dimensions.map(d => {
+                const scores = byDimension[d].simd;
+                return scores.reduce((a, b) => a + b, 0) / scores.length;
+            });
+            const avgScalar = dimensions.map(d => {
+                const scores = byDimension[d].scalar;
+                return scores.reduce((a, b) => a + b, 0) / scores.length;
+            });
+
+            if (scalingChart) scalingChart.destroy();
+            scalingChart = new Chart(document.getElementById('scalingChart'), {
+                type: 'line',
+                data: {
+                    labels: dimensions.map(d => d.toString()),
+                    datasets: [
+                        {
+                            label: 'SIMD Avg',
+                            data: avgSimd,
+                            borderColor: colors.simd,
+                            backgroundColor: colors.simd + '20',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Scalar Avg',
+                            data: avgScalar,
+                            borderColor: colors.scalar,
+                            backgroundColor: colors.scalar + '20',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { padding: 20, usePointStyle: true }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            title: { display: true, text: 'Dimension' }
+                        },
+                        y: {
+                            grid: { color: colors.grid },
+                            title: { display: true, text: 'Avg ops/us' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const paired = pairByBackend(data);
+            const tbody = document.getElementById('resultsBody');
+
+            tbody.innerHTML = paired.map(p => {
+                const speedup = p.simd.score / p.scalar.score;
+                const speedupClass = speedup >= 1 ? 'positive' : 'negative';
+
+                return `
+                    <tr>
+                        <td>${p.simd.name}</td>
+                        <td>${p.simd.dimension}${p.simd.batchSize ? ` / ${p.simd.batchSize}` : ''}</td>
+                        <td class="score-cell">${p.simd.score.toFixed(2)}</td>
+                        <td class="score-cell">${p.scalar.score.toFixed(2)}</td>
+                        <td><span class="speedup-badge ${speedupClass}">${speedup.toFixed(2)}x</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // History management
+        function saveToHistory(data, filename) {
+            const history = getHistory();
+            history.unshift({
+                date: new Date().toISOString(),
+                filename,
+                summary: {
+                    count: pairByBackend(data).length,
+                    avgSpeedup: calculateAvgSpeedup(data)
+                }
+            });
+            localStorage.setItem('benchHistory', JSON.stringify(history.slice(0, 10)));
+        }
+
+        function getHistory() {
+            try {
+                return JSON.parse(localStorage.getItem('benchHistory')) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function calculateAvgSpeedup(data) {
+            const paired = pairByBackend(data);
+            const speedups = paired.map(p => p.simd.score / p.scalar.score).filter(s => isFinite(s));
+            return speedups.length > 0 ? speedups.reduce((a, b) => a + b, 0) / speedups.length : 0;
+        }
+
+        function renderHistory() {
+            const history = getHistory();
+            const list = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                list.innerHTML = '<span style="color: var(--silver); font-size: 14px;">No previous runs</span>';
+                return;
+            }
+
+            list.innerHTML = history.map((h, i) => {
+                const date = new Date(h.date);
+                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `<div class="history-item" data-index="${i}">
+                    <strong>${h.filename || 'results.json'}</strong><br>
+                    <span style="color: var(--silver)">${dateStr}</span><br>
+                    <span style="color: var(--jade-green)">${h.summary?.avgSpeedup?.toFixed(2) || '?'}x avg</span>
+                </div>`;
+            }).join('') + '<button class="clear-history" id="clearHistory">Clear History</button>';
+
+            document.getElementById('clearHistory')?.addEventListener('click', () => {
+                localStorage.removeItem('benchHistory');
+                renderHistory();
+            });
+        }
+
+        // Filter handling
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeFilter = btn.dataset.filter;
+                if (currentData) renderDashboard();
+            });
+        });
+
+        // Auto-load results
+        fetch("benchmark-results.json").then(r => r.json()).then(data => { processData(data, "benchmark-results.json"); }).catch(e => console.log("No results yet"));
+        // Initial render
+        renderHistory();
+    </script>
+</body>
+</html>
